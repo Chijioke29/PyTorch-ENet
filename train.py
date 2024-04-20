@@ -1,3 +1,5 @@
+import tqdm
+
 class Train:
     """Performs the training of ``model`` given a training dataset data
     loader, the optimizer, and the loss criterion.
@@ -35,7 +37,9 @@ class Train:
         self.model.train()
         epoch_loss = 0.0
         self.metric.reset()
-        for step, batch_data in enumerate(self.data_loader):
+
+        data_loader = tqdm.tqdm(self.data_loader, desc='Training', unit='batch')
+        for step, batch_data in enumerate(data_loader):
             # Get the inputs and labels
             inputs = batch_data[0].to(self.device)
             labels = batch_data[1].to(self.device)

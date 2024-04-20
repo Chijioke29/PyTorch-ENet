@@ -15,6 +15,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+cityscapes/
 lib64/
 parts/
 sdist/
