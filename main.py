@@ -1,4 +1,5 @@
 import os
+import csv
 
 import torch
 import torch.nn as nn
@@ -185,6 +186,12 @@ def train(train_loader, val_loader, class_weights, class_encoding):
     print()
     train = Train(model, train_loader, optimizer, criterion, metric, device)
     val = Test(model, val_loader, criterion, metric, device)
+
+    train_losses = []
+    val_losses = []
+    train_mious = []
+    val_mious = []
+
     for epoch in range(start_epoch, args.epochs):
         print(">>>> [Epoch: {0:d}] Training".format(epoch))
 
@@ -193,26 +200,68 @@ def train(train_loader, val_loader, class_weights, class_encoding):
 
         print(">>>> [Epoch: {0:d}] Avg. loss: {1:.4f} | Mean IoU: {2:.4f}".
               format(epoch, epoch_loss, miou))
+        
+        # Save training metrics to CSV
+        train_loss, train_miou = epoch_loss, miou
+        train_losses.append(train_loss)
+        train_mious.append(train_miou)
 
-        if (epoch + 1) % 10 == 0 or epoch + 1 == args.epochs:
-            print(">>>> [Epoch: {0:d}] Validation".format(epoch))
+        train_results_file = os.path.join(args.save_dir, 'Train_results', 'train_results.csv')
+        if not os.path.exists(os.path.dirname(train_results_file)):
+            os.makedirs(os.path.dirname(train_results_file))
+        if epoch == start_epoch:
+            with open(train_results_file, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['Epoch', 'Loss', 'Mean IoU'])
+        train.save_metrics_to_csv(epoch, train_loss, train_miou, train_results_file)
 
-            loss, (iou, miou) = val.run_epoch(args.print_step)
+        # if (epoch + 1) % 10 == 0 or epoch + 1 == args.epochs:
+        print(">>>> [Epoch: {0:d}] Validation".format(epoch))
 
-            print(">>>> [Epoch: {0:d}] Avg. loss: {1:.4f} | Mean IoU: {2:.4f}".
-                  format(epoch, loss, miou))
+        loss, (iou, miou) = val.run_epoch(args.print_step)
 
-            # Print per class IoU on last epoch or if best iou
-            if epoch + 1 == args.epochs or miou > best_miou:
+        print(">>>> [Epoch: {0:d}] Avg. loss: {1:.4f} | Mean IoU: {2:.4f}".
+                format(epoch, loss, miou))
+            
+        # Save validation metrics to CSV
+        val_loss, val_miou = loss, miou
+        val_losses.append(val_loss)
+        val_mious.append(val_miou)
+
+        val_results_file = os.path.join(args.save_dir, 'Train_results', 'val_results.csv')
+        if not os.path.exists(os.path.dirname(val_results_file)):
+            os.makedirs(os.path.dirname(val_results_file))
+        if epoch == start_epoch:
+            with open(val_results_file, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['Epoch', 'Loss', 'Mean IoU'])
+        train.save_metrics_to_csv(epoch, val_loss, val_miou, val_results_file)
+
+        # Print per class IoU on last epoch or if best iou and save to file
+        if epoch + 1 == args.epochs or miou > best_miou:
+            class_iou_file = os.path.join(args.save_dir, 'Train_results', 'class_iou.csv')
+            if not os.path.exists(os.path.dirname(class_iou_file)):
+                os.makedirs(os.path.dirname(class_iou_file))
+
+            with open(class_iou_file, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['Class', 'IoU'])
                 for key, class_iou in zip(class_encoding.keys(), iou):
-                    print("{0}: {1:.4f}".format(key, class_iou))
+                    writer.writerow([key, class_iou])
 
-            # Save the model if it's the best thus far
-            if miou > best_miou:
-                print("\nBest model thus far. Saving...\n")
-                best_miou = miou
-                utils.save_checkpoint(model, optimizer, epoch + 1, best_miou,
-                                      args)
+            for key, class_iou in zip(class_encoding.keys(), iou):
+                print("{0}: {1:.4f}".format(key, class_iou))
+
+        # Save the model if it's the best thus far
+        if miou > best_miou:
+            print("\nBest model thus far. Saving...\n")
+            best_miou = miou
+            utils.save_checkpoint(model, optimizer, epoch + 1, best_miou,
+                                    args)
+                
+    # Plot and save training and validation metrics
+    epochs = list(range(start_epoch, args.epochs))
+    train.plot_and_save_metrics(epochs, train_losses, val_losses, train_mious, val_mious)
 
     return model
 
@@ -244,6 +293,26 @@ def test(model, test_loader, class_weights, class_encoding):
 
     print(">>>> Avg. loss: {0:.4f} | Mean IoU: {1:.4f}".format(loss, miou))
 
+    # Save mIoU to CSV
+    miou_results_file = os.path.join(args.save_dir, 'Test_results', 'miou_results.csv')
+    if not os.path.exists(os.path.dirname(miou_results_file)):
+        os.makedirs(os.path.dirname(miou_results_file))
+    with open(miou_results_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['mIoU'])
+        writer.writerow([miou])
+
+    # Save class IoU to CSV
+    class_iou_file = os.path.join(args.save_dir, 'Test_results', 'class_iou.csv')
+    if not os.path.exists(os.path.dirname(class_iou_file)):
+        os.makedirs(os.path.dirname(class_iou_file))
+        
+    with open(class_iou_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Class', 'IoU'])
+        for key, class_iou in class_iou.items():
+            writer.writerow([key, class_iou])
+
     # Print per class IoU
     for key, class_iou in zip(class_encoding.keys(), iou):
         print("{0}: {1:.4f}".format(key, class_iou))
@@ -251,12 +320,22 @@ def test(model, test_loader, class_weights, class_encoding):
     # Show a batch of samples and labels
     if args.imshow_batch:
         print("A batch of predictions from the test set...")
-        images, _ = next(iter(test_loader))
-        predict(model, images, class_encoding)
+        images, labels = next(iter(test_loader))
+        predict(model, images, labels, class_encoding, save_dir=args.save_dir)
 
 
-def predict(model, images, class_encoding):
+def predict(model, images, labels, class_encoding, save_dir=None):
+    """Make predictions on images and visualize original RGB, ground truth mask, and predictions.
+
+    Args:
+        model (torch.nn.Module): Trained model.
+        images (torch.Tensor): Original RGB images tensor of shape (B, C, H, W).
+        labels (torch.Tensor): Ground truth mask tensor of shape (B, C, H, W).
+        class_encoding (dict): Dictionary mapping class labels to RGB colors.
+        save_dir (str, optional): Directory to save the visualization image. Default is None.
+    """
     images = images.to(device)
+    labels = labels.to(device)
 
     # Make predictions!
     model.eval()
@@ -272,7 +351,9 @@ def predict(model, images, class_encoding):
         transforms.ToTensor()
     ])
     color_predictions = utils.batch_transform(predictions.cpu(), label_to_rgb)
-    utils.imshow_batch(images.data.cpu(), color_predictions)
+
+    # Display and save visualization
+    utils.imshow_batch(images.data.cpu(), labels.data.cpu(), color_predictions, save_dir=args.save_dir)
 
 
 # Run only if this module is being run directly

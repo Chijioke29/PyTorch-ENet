@@ -3,6 +3,9 @@ import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+#from args import get_arguments
+
+#args = get_arguments()
 
 
 def batch_transform(batch, transform):
@@ -23,7 +26,7 @@ def batch_transform(batch, transform):
     return torch.stack(transf_slices)
 
 
-def imshow_batch(images, labels):
+def imshow_batch(images, labels, predictions, save_dir=None):
     """Displays two grids of images. The top grid displays ``images``
     and the bottom grid ``labels``
 
@@ -35,13 +38,37 @@ def imshow_batch(images, labels):
 
     """
 
-    # Make a grid with the images and labels and convert it to numpy
+    # Make a grid with the images, labels, and predictions and convert it to numpy
     images = torchvision.utils.make_grid(images).numpy()
     labels = torchvision.utils.make_grid(labels).numpy()
+    predictions = torchvision.utils.make_grid(predictions).numpy()
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7))
-    ax1.imshow(np.transpose(images, (1, 2, 0)))
-    ax2.imshow(np.transpose(labels, (1, 2, 0)))
+    # Display the three grids side by side
+    # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7))
+    # ax1.imshow(np.transpose(images, (1, 2, 0)))
+    # ax2.imshow(np.transpose(labels, (1, 2, 0)))
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 7))
+    axes[0].imshow(np.transpose(images, (1, 2, 0)))
+    axes[0].set_title('Original RGB Image')
+    axes[1].imshow(np.transpose(labels, (1, 2, 0)))
+    axes[1].set_title('Ground Truth Mask')
+    axes[2].imshow(np.transpose(predictions, (1, 2, 0)))
+    axes[2].set_title('Color Predictions')
+
+    # Save the visualization if save_dir is provided
+    if save_dir:
+        global image_counter
+        image_counter += 1
+
+        # Create a directory to save visualizations if it doesn't exist
+        visualizations_dir = os.path.join(save_dir, 'visualizations')
+        if not os.path.exists(visualizations_dir):
+            os.makedirs(visualizations_dir)
+
+        # Save the visualization with a unique filename including the index
+        filename = f'visualization_{image_counter}.png'
+        plt.savefig(os.path.join(visualizations_dir, filename))
 
     plt.show()
 

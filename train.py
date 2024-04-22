@@ -1,4 +1,6 @@
 import tqdm
+import csv
+import matplotlib.pyplot as plt
 
 class Train:
     """Performs the training of ``model`` given a training dataset data
@@ -65,3 +67,31 @@ class Train:
                 print("[Step: %d] Iteration loss: %.4f" % (step, loss.item()))
 
         return epoch_loss / len(self.data_loader), self.metric.value()
+
+    def save_metrics_to_csv(self, epoch, loss, metric_value, filename):
+        with open(filename, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([epoch, loss, metric_value])
+
+    def plot_and_save_metrics(self, epochs, train_losses, val_losses, train_metrics, val_metrics):
+        plt.figure(figsize=(10, 5))
+        plt.plot(epochs, train_losses, label='Train Loss')
+        plt.plot(epochs, val_losses, label='Validation Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title('Training and Validation Loss')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig('Train_results/loss_plot.png')
+        plt.close()
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(epochs, train_metrics, label='Train Mean IoU')
+        plt.plot(epochs, val_metrics, label='Validation Mean IoU')
+        plt.xlabel('Epoch')
+        plt.ylabel('Mean IoU')
+        plt.title('Training and Validation Mean IoU')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig('Train_results/miou_plot.png')
+        plt.close()
