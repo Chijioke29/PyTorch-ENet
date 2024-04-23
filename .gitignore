@@ -16,6 +16,9 @@ eggs/
 .eggs/
 lib/
 cityscapes/
+Train_results/
+visualizations/
+Test_results/
 lib64/
 parts/
 sdist/

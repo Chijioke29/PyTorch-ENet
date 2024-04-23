@@ -82,7 +82,7 @@ class Train:
         plt.title('Training and Validation Loss')
         plt.legend()
         plt.grid(True)
-        plt.savefig('Train_results/loss_plot.png')
+        plt.savefig('save/Train_results/loss_plot.png')
         plt.close()
 
         plt.figure(figsize=(10, 5))
@@ -93,5 +93,5 @@ class Train:
         plt.title('Training and Validation Mean IoU')
         plt.legend()
         plt.grid(True)
-        plt.savefig('Train_results/miou_plot.png')
+        plt.savefig('save/Train_results/miou_plot.png')
         plt.close()
