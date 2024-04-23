@@ -19,6 +19,10 @@ cityscapes/
 Train_results/
 visualizations/
 Test_results/
+.sbatch
+.def
+.sif
+.out
 lib64/
 parts/
 sdist/
