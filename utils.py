@@ -6,7 +6,8 @@ import os
 #from args import get_arguments
 
 #args = get_arguments()
-
+# Initialize image counter
+image_counter = 0
 
 def batch_transform(batch, transform):
     """Applies a transform to a batch of samples.
@@ -26,7 +27,7 @@ def batch_transform(batch, transform):
     return torch.stack(transf_slices)
 
 
-def imshow_batch(images, labels, predictions, save_dir=None):
+def imshow_batch1(images, labels):
     """Displays two grids of images. The top grid displays ``images``
     and the bottom grid ``labels``
 
@@ -38,9 +39,33 @@ def imshow_batch(images, labels, predictions, save_dir=None):
 
     """
 
-    # Make a grid with the images, labels, and predictions and convert it to numpy
+    # Make a grid with the images and labels and convert it to numpy
     images = torchvision.utils.make_grid(images).numpy()
     labels = torchvision.utils.make_grid(labels).numpy()
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7))
+    ax1.imshow(np.transpose(images, (1, 2, 0)))
+    ax2.imshow(np.transpose(labels, (1, 2, 0)))
+
+    plt.show()
+
+
+def imshow_batch(images, color_labels, predictions, args):
+    """Displays two grids of images. The top grid displays ``images``
+    and the bottom grid ``labels``
+
+    Keyword arguments:
+    - images (``Tensor``): a 4D mini-batch tensor of shape
+    (B, C, H, W)
+    - labels (``Tensor``): a 4D mini-batch tensor of shape
+    (B, C, H, W)
+
+    """
+    global image_counter  # Declare image_counter as global
+
+    # Make a grid with the images, labels, and predictions and convert it to numpy
+    images = torchvision.utils.make_grid(images).numpy()
+    color_labels = torchvision.utils.make_grid(color_labels).numpy()
     predictions = torchvision.utils.make_grid(predictions).numpy()
 
     # Display the three grids side by side
@@ -48,21 +73,20 @@ def imshow_batch(images, labels, predictions, save_dir=None):
     # ax1.imshow(np.transpose(images, (1, 2, 0)))
     # ax2.imshow(np.transpose(labels, (1, 2, 0)))
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 7))
+    fig, axes = plt.subplots(3, 1, figsize=(15, 7))
     axes[0].imshow(np.transpose(images, (1, 2, 0)))
     axes[0].set_title('Original RGB Image')
-    axes[1].imshow(np.transpose(labels, (1, 2, 0)))
+    axes[1].imshow(np.transpose(color_labels, (1, 2, 0)))
     axes[1].set_title('Ground Truth Mask')
     axes[2].imshow(np.transpose(predictions, (1, 2, 0)))
     axes[2].set_title('Color Predictions')
 
     # Save the visualization if save_dir is provided
-    if save_dir:
-        global image_counter
+    if args.save_dir:
         image_counter += 1
 
         # Create a directory to save visualizations if it doesn't exist
-        visualizations_dir = os.path.join(save_dir, 'visualizations')
+        visualizations_dir = os.path.join(args.save_dir, 'visualizations')
         if not os.path.exists(visualizations_dir):
             os.makedirs(visualizations_dir)
 
@@ -142,7 +166,7 @@ def load_checkpoint(model, optimizer, folder_dir, filename):
         model_path), "The model file \"{0}\" doesn't exist.".format(filename)
 
     # Load the stored model parameters to the model instance
-    checkpoint = torch.load(model_path)
+    checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     epoch = checkpoint['epoch']

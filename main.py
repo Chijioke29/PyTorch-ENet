@@ -113,7 +113,7 @@ def load_dataset(dataset):
             transforms.ToTensor()
         ])
         color_labels = utils.batch_transform(labels, label_to_rgb)
-        utils.imshow_batch(images, color_labels)
+        utils.imshow_batch1(images, color_labels)
 
     # Get class weights from the selected weighing technique
     print("\nWeighing technique:", args.weighing)
@@ -321,10 +321,10 @@ def test(model, test_loader, class_weights, class_encoding):
     if args.imshow_batch:
         print("A batch of predictions from the test set...")
         images, labels = next(iter(test_loader))
-        predict(model, images, labels, class_encoding, save_dir=args.save_dir)
+        predict(model, images, labels, class_encoding, args)
 
 
-def predict(model, images, labels, class_encoding, save_dir=None):
+def predict(model, images, labels, class_encoding, args):
     """Make predictions on images and visualize original RGB, ground truth mask, and predictions.
 
     Args:
@@ -350,10 +350,12 @@ def predict(model, images, labels, class_encoding, save_dir=None):
         ext_transforms.LongTensorToRGBPIL(class_encoding),
         transforms.ToTensor()
     ])
+    
+    color_labels = utils.batch_transform(labels, label_to_rgb)
     color_predictions = utils.batch_transform(predictions.cpu(), label_to_rgb)
 
     # Display and save visualization
-    utils.imshow_batch(images.data.cpu(), labels.data.cpu(), color_predictions, save_dir=args.save_dir)
+    utils.imshow_batch(images.data.cpu(), color_labels.data.cpu(), color_predictions, args)
 
 
 # Run only if this module is being run directly
