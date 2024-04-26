@@ -130,9 +130,9 @@ def load_dataset(dataset):
     if class_weights is not None:
         class_weights = torch.from_numpy(class_weights).float().to(device)
         # Set the weight of the unlabeled class to 0
-        if args.ignore_unlabeled:
-            ignore_index = list(class_encoding).index('unlabeled')
-            class_weights[ignore_index] = 0
+        #if args.ignore_unlabeled:
+            #ignore_index = list(class_encoding).index('unlabeled')
+            #class_weights[ignore_index] = 0
 
     print("Class weights:", class_weights)
 
@@ -166,11 +166,12 @@ def train(train_loader, val_loader, class_weights, class_encoding):
                                      args.lr_decay)
 
     # Evaluation metric
-    if args.ignore_unlabeled:
-        ignore_index = list(class_encoding).index('unlabeled')
-    else:
-        ignore_index = None
-    metric = IoU(num_classes, ignore_index=ignore_index)
+    #if args.ignore_unlabeled:
+        #ignore_index = list(class_encoding).index('unlabeled')
+    #else:
+        #ignore_index = None
+    #metric = IoU(num_classes, ignore_index=ignore_index)
+    metric = IoU(num_classes)
 
     # Optionally resume from a checkpoint
     if args.resume:
@@ -277,11 +278,12 @@ def test(model, test_loader, class_weights, class_encoding):
     criterion = nn.CrossEntropyLoss(weight=class_weights)
 
     # Evaluation metric
-    if args.ignore_unlabeled:
-        ignore_index = list(class_encoding).index('unlabeled')
-    else:
-        ignore_index = None
-    metric = IoU(num_classes, ignore_index=ignore_index)
+    #if args.ignore_unlabeled:
+        #ignore_index = list(class_encoding).index('unlabeled')
+    #else:
+        #ignore_index = None
+    #metric = IoU(num_classes, ignore_index=ignore_index)
+    metric = IoU(num_classes)
 
     # Test the trained model on the test set
     test = Test(model, test_loader, criterion, metric, device)
