@@ -146,7 +146,27 @@ def train(train_loader, val_loader, class_weights, class_encoding):
     num_classes = len(class_encoding)
 
     # Intialize ENet
-    model = ENet(num_classes).to(device)
+    model = ENet(20)
+
+    # Load the pretrained model for transfer learning using the defined load function
+    pretrained_path = "save/ENet_Cityscapes/"
+    pretrained_name = "ENet2"
+    opt = optim.Adam(model.parameters())
+    model = utils.load_checkpoint(model, opt, pretrained_path,
+                                      pretrained_name)[0]
+    
+    # Freeze all layers except the last layer
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    # Modify last layer
+    # num_classes = 2  # Number of classes in your dataset
+    num_features = model.transposed_conv.in_channels
+    model.transposed_conv = nn.ConvTranspose2d(num_features, num_classes, kernel_size=3, stride=2, padding=1, bias=False)
+
+    # Move model to device
+    model = model.to(device)
+
     # Check if the network architecture is correct
     print(model)
 
